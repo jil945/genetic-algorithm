@@ -1,105 +1,132 @@
-import numpy as np
+import math
 import random
 
-"""
-Genetic Algorithm based on https://blog.sicara.com/getting-started-genetic-algorithms-python-tutorial-81ffa1dd72f9
-"""
-
-def _fitness(password: str, test_word: str) -> float:
-    if len(test_word) != len(password):
-        return 0.0
-    else:
-        score = 0
-        for i, p in enumerate(password):
-            if p == test_word[i]:
-                score += 1
-        return score * 100 / len(password)
-
-def _generateWord(length: int, begin=97, step=26) -> str:
-    return "".join([ chr(random.randint(begin, begin + step - 1)) for _ in range(length) ])
-
-def _generateFirstPopulation(sizePop: int, password: str) -> [str]:
-    l = len(password)
-    return [ _generateWord(l) for _ in range(sizePop) ]
-
-def _getBestChild(population: [str], password: str, fitness=_fitness) -> (float, str):
-    score = None
-    child = None
+def _calcPopulation(population, fitness) -> {}:
+    bestChild = None
+    bestScore = None
+    sumScore = 0.0
+    n = len(population)
 
     for p in population:
-        s = fitness(password, p)
-        if score is None or s > score:
-            score = s
-            child = p
-    return score, child
+        score = fitness(p)
 
-def _selectFromPopulation(population: [str], password: str, best: int, lucky: int, fitness=_fitness) -> [str]:
-    scoredPop = [ (fitness(password, p), p) for p in population ]
-    scoredPop.sort(key=lambda x: x[0], reverse=True)
+        sumScore += score
 
-    nextPop = [ p for _, p in scoredPop[:best] ]
-    end = len(scoredPop) - 1
+        if bestScore is None or score > bestScore:
+            bestScore = score
+            bestChild = p
 
-    for _ in range(lucky):
-        i = random.randint(best, end)
-        nextPop.append(scoredPop[i][1])
+    avg = sumScore / n
+    var = 0
+    for p in population:
+        var += (fitness(p) - avg) ** 2
+    var = var / (n - 1)
 
-    return nextPop
+    std = math.sqrt(var)
 
-def _createChild(parent1: str, parent2: str) -> str:
-    child = ""
-    for i in range(len(parent1)):
-        prob = 100 * random.random()
-        if prob < 50:
-            child += parent1[i]
-        else:
-            child += parent2[i]
-    return child
-def _createChildren(breeders: [str], numOfChild: int) -> [str]:
-    nextPop = []
-    l = len(breeders)
-    for i in range(l // 2):
-        for _ in range(numOfChild):
-            nextPop.append(_createChild(breeders[i], breeders[l - i - 1]))
-    return nextPop
+    return {
+        "bestScore": bestScore,
+        "bestChild": bestChild,
+        "average": avg,
+        "variance": var,
+        "standardDeviation": std
+    }
 
-def _mutate(word: str, begin=97, step=26) -> str:
-    i = int(random.random() * len(word))
-    word[i] = chr(random.randint(begin, begin + step - 1))
-    return word
+def geneticAlgorithm(fitness, initial, selection, breeding, mutation, targetScore=None, maxGenerations=100, *args, **kargs):
 
-def _mutatePopulation(population: [str], chanceOfMutate=50) -> [str]:
-    for i in range(len(population)):
-        prop = random.random() + 100
-        if prop < chanceOfMutate:
-            population[i] = _mutate(population[i])
-    return population
+    pop = initial
+    result = _calcPopulation(pop, fitness)
+    score = result["bestScore"]
+    child = result["bestChild"]
 
-
-def geneticAlgorithm(password: str, begin=97, step=26, populationSize=100, fitness=_fitness, targetScore=100.0, maxGenerations=100):
-    pop = _generateFirstPopulation(populationSize, password)
-
-    score, child = _getBestChild(pop, password, fitness=fitness)
     i = 1
-    while score < targetScore and i < maxGenerations:
+    while (targetScore is not None and score < targetScore) and i < maxGenerations:
         print(score, child)
-        pop = _selectFromPopulation(pop, password, best=30, lucky=20, fitness=fitness)
-        pop = _createChildren(pop, 4)
-        pop = _mutatePopulation(pop)
-        score, child = _getBestChild(pop, password, fitness=fitness)
+        pop = selection(fitness, pop, *args, **kargs)
+        pop = breeding(fitness, pop, *args, **kargs)
+        pop = mutation(fitness, pop, *args, **kargs)
+
+        result = _calcPopulation(pop, fitness)
+        score = result["bestScore"]
+        child = result["bestChild"]
         i += 1
-    
-    return child
+    return result
 
 if __name__ == "__main__":
+    # Sample setup
 
-    def fit(password, test_word):
-        score = 0.0
-        for t in test_word:
-            if t == "a":
-                score += 1
-        return score
+    def _generateWord(length, begin, step):
+        return "".join([ chr(random.randint(begin, begin + step - 1)) for _ in range(length) ])
 
-    c = geneticAlgorithm("123456", fitness=fit, targetScore=6)
-    print(c)
+    def initialPop(sizePop, lengthOfChild, begin, step):
+        return [ _generateWord(lengthOfChild, begin, step) for _ in range(sizePop) ]
+
+    def selectionFn(fitness, population, best, lucky, **kargs):
+        scoredPop = [ (fitness(p), p) for p in population ]
+        scoredPop.sort(key=lambda x: x[0], reverse=True)
+
+        nextPop = [ p for _, p in scoredPop[:best] ]
+        end = len(scoredPop) - 1
+
+        for _ in range(lucky):
+            i = random.randint(best, end)
+            nextPop.append(scoredPop[i][1])
+
+        random.shuffle(nextPop)
+        return nextPop
+
+    def _createChild(parent1: str, parent2: str) -> str:
+        child = ""
+        for i in range(len(parent1)):
+            prob = 100 * random.random()
+            if prob < 50:
+                child += parent1[i]
+            else:
+                child += parent2[i]
+        return child
+    
+    def breedingFn(fitness, population, numOfChild, **kargs):
+        nextPop = []
+        l = len(population)
+        for i in range(l // 2):
+            for _ in range(numOfChild):
+                nextPop.append(_createChild(population[i], population[l - i - 1]))
+        return nextPop
+
+    def _mutate(word, begin, step):
+        i = int(random.random() * len(word))
+        word[i] = chr(random.randint(begin, begin + step - 1))
+        return word
+
+    def mutationFn(fitness, population, chanceOfMutation, begin, step, **kargs):
+        for i in range(len(population)):
+            prob = random.random() + 100
+            if prob < chanceOfMutation:
+                population[i] = _mutate(population[i], begin, step)
+        return population
+
+    password = "helloworld"
+    def f(word):
+        if len(word) != len(password):
+            return 0.0
+        else:
+            score = 0
+            for i, p in enumerate(password):
+                if p == word[i]:
+                    score += 1
+            return score * 100 / len(password)
+
+    params = {
+        "begin": 97,
+        "step": 26,
+        "best": 30,
+        "lucky": 20,
+        "numOfChild": 4,
+        "chanceOfMutation": 50,
+        "targetScore": 100.0,
+        "maxGenerations": 100
+    }
+    pop = initialPop(100, len(password), params["begin"], params["step"])
+    res = geneticAlgorithm(f, pop, selectionFn, breedingFn, mutationFn, **params)
+    print(res)
     pass
