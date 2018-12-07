@@ -18,6 +18,8 @@ def best_half_selection(children, pop_number):
 def random_kth_selection(children, pop_number):
     random_candidates = []
     selection = int((random.random() * pop_number))
+    if selection == 0:
+        selection += 2
     random_candidates.extend(children[:selection])
     return random_candidates
 
@@ -25,6 +27,8 @@ def random_kth_selection(children, pop_number):
 def random_choice_selection(children, pop_number):
     random_candidates = []
     select_number = int((random.random() * pop_number))
+    if select_number == 0:
+        select_number += 2
     for _ in range(select_number):
         random_candidates.append(random.choice(children))
     return random_candidates

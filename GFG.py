@@ -3,7 +3,7 @@ import selection as select
 import breeding as breed
 import mutation as mutate
 
-print("yupa")
+
 def genetic_algorithm(population, genes, fitness_func, select_func, cross_func, mutate_func, max_generations=200):
     perfect_fit = False
     generation = 0
