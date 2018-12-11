@@ -1,94 +1,103 @@
 import math
 import random
+import time
 
-def _calcPopulation(population, fitness) -> {}:
-    bestChild = None
-    bestScore = None
-    sumScore = 0.0
+def _calc_population(population, fitness) -> {}:
+    best_child = None
+    best_score = None
+    sum_score = 0.0
     n = len(population)
 
-    for p in population:
-        score = fitness(p)
+    pop_score = [ fitness(p) for p in population ]
 
-        sumScore += score
+    for i, score in enumerate(pop_score):
+        sum_score += score
 
-        if bestScore is None or score > bestScore:
-            bestScore = score
-            bestChild = p
+        if best_score is None or score > best_score:
+            best_score = score
+            best_child = population[i]
 
-    avg = sumScore / n
+    avg = sum_score / n
     var = 0
-    for p in population:
-        var += (fitness(p) - avg) ** 2
+    for score in pop_score:
+        var += (score - avg) ** 2
     var = var / (n - 1)
 
     std = math.sqrt(var)
 
     return {
-        "bestScore": bestScore,
-        "bestChild": bestChild,
+        "bestScore": best_score,
+        "bestChild": best_child,
         "average": avg,
         "variance": var,
-        "standardDeviation": std
+        "standardDeviation": std,
+        "population": population,
+        "fitness": pop_score
     }
-def geneticAlgorithm(fitness, initial, selection, breeding, mutation, targetScore=None, maxGenerations=100, *args, **kargs):
-    """[summary]
+def genetic_algorithm(fitness, initial, selection, breeding, mutation, target_score=None, max_generations=100, *args, **kargs):
+    """Run the genetic algorithm based on the provied selection, breeding, mutation function
     
     Args:
-        fitness ([type]): Fitness function, takes in member of population, returns flaot
-        initial ([type]): initial population
-        selection ([type]): section function, 
-        breeding ([type]): [description]
-        mutation ([type]): [description]
-        targetScore ([type], optional): Defaults to None. [description]
-        maxGenerations (int, optional): Defaults to 100. [description]
+        fitness (None): Fitness function, takes in member of population, returns flaot
+        initial ([None]): initial population
+        selection (None): selection step, takes in fitness, population, *args, **kargs, returns population
+        breeding (None): breeding step, takes in fitness, population, *args, **kargs, returns population
+        mutation (None): mutation step, takes in fitness, population, *args, **kargs, returns population
+        target_score (float, optional): Defaults to None. target score for fitness function to reach
+        max_generations (int, optional): Defaults to 100. Max iterations the loop will run for
     
     Returns:
-        [type]: [description]
+        [None]: Result list
     """
-
+    res_list = []
     pop = initial
-    result = _calcPopulation(pop, fitness)
+    result = _calc_population(pop, fitness)
     score = result["bestScore"]
-    child = result["bestChild"]
+    # child = result["bestChild"]
+    res_list.append(result)
 
     i = 1
-    while (targetScore is not None and score < targetScore) and i < maxGenerations:
-        print(score, child)
+    while (target_score is not None and score < target_score) and i < max_generations:
+
+        start = time.time()
         pop = selection(fitness, pop, *args, **kargs)
         pop = breeding(fitness, pop, *args, **kargs)
         pop = mutation(fitness, pop, *args, **kargs)
+        end = time.time()
 
-        result = _calcPopulation(pop, fitness)
+        result = _calc_population(pop, fitness)
+        result["time"] = end - start
         score = result["bestScore"]
-        child = result["bestChild"]
+        # child = result["bestChild"]
+        res_list.append(result)
         i += 1
-    return result
+    return res_list
 
 if __name__ == "__main__":
     # Sample setup
+    # DO NOT ACTUALLY USE IT
 
-    def _generateWord(length, begin, step):
+    def _generate_word(length, begin, step):
         return "".join([ chr(random.randint(begin, begin + step - 1)) for _ in range(length) ])
 
-    def initialPop(sizePop, lengthOfChild, begin, step):
-        return [ _generateWord(lengthOfChild, begin, step) for _ in range(sizePop) ]
+    def initial_pop(sizePop, lengthOfChild, begin, step):
+        return [ _generate_word(lengthOfChild, begin, step) for _ in range(sizePop) ]
 
-    def selectionFn(fitness, population, best, lucky, **kargs):
-        scoredPop = [ (fitness(p), p) for p in population ]
-        scoredPop.sort(key=lambda x: x[0], reverse=True)
+    def selection_fn(fitness, population, best, lucky, **kargs):
+        scored_pop = [ (fitness(p), p) for p in population ]
+        scored_pop.sort(key=lambda x: x[0], reverse=True)
 
-        nextPop = [ p for _, p in scoredPop[:best] ]
-        end = len(scoredPop) - 1
+        next_pop = [ p for _, p in scored_pop[:best] ]
+        end = len(scored_pop) - 1
 
         for _ in range(lucky):
             i = random.randint(best, end)
-            nextPop.append(scoredPop[i][1])
+            next_pop.append(scored_pop[i][1])
 
-        random.shuffle(nextPop)
-        return nextPop
+        random.shuffle(next_pop)
+        return next_pop
 
-    def _createChild(parent1: str, parent2: str) -> str:
+    def _create_child(parent1: str, parent2: str) -> str:
         child = ""
         for i in range(len(parent1)):
             prob = 100 * random.random()
@@ -98,23 +107,23 @@ if __name__ == "__main__":
                 child += parent2[i]
         return child
     
-    def breedingFn(fitness, population, numOfChild, **kargs):
-        nextPop = []
+    def breeding_fn(fitness, population, num_of_children, **kargs):
+        next_pop = []
         l = len(population)
         for i in range(l // 2):
-            for _ in range(numOfChild):
-                nextPop.append(_createChild(population[i], population[l - i - 1]))
-        return nextPop
+            for _ in range(num_of_children):
+                next_pop.append(_create_child(population[i], population[l - i - 1]))
+        return next_pop
 
     def _mutate(word, begin, step):
         i = int(random.random() * len(word))
         word[i] = chr(random.randint(begin, begin + step - 1))
         return word
 
-    def mutationFn(fitness, population, chanceOfMutation, begin, step, **kargs):
+    def mutation_fn(fitness, population, chance_of_mutation, begin, step, **kargs):
         for i in range(len(population)):
             prob = random.random() + 100
-            if prob < chanceOfMutation:
+            if prob < chance_of_mutation:
                 population[i] = _mutate(population[i], begin, step)
         return population
 
@@ -134,12 +143,12 @@ if __name__ == "__main__":
         "step": 26,
         "best": 30,
         "lucky": 20,
-        "numOfChild": 4,
-        "chanceOfMutation": 50,
-        "targetScore": 100.0,
-        "maxGenerations": 100
+        "num_of_children": 4,
+        "chance_of_mutation": 50,
+        "target_score": 100.0,
+        "max_generations": 100
     }
-    pop = initialPop(100, len(password), params["begin"], params["step"])
-    res = geneticAlgorithm(f, pop, selectionFn, breedingFn, mutationFn, **params)
+    pop = initial_pop(100, len(password), params["begin"], params["step"])
+    res = genetic_algorithm(f, pop, selection_fn, breeding_fn, mutation_fn, **params)
     print(res)
     pass
