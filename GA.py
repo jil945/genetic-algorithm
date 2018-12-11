@@ -31,8 +31,21 @@ def _calcPopulation(population, fitness) -> {}:
         "variance": var,
         "standardDeviation": std
     }
-
 def geneticAlgorithm(fitness, initial, selection, breeding, mutation, targetScore=None, maxGenerations=100, *args, **kargs):
+    """[summary]
+    
+    Args:
+        fitness ([type]): Fitness function, takes in member of population, returns flaot
+        initial ([type]): initial population
+        selection ([type]): section function, 
+        breeding ([type]): [description]
+        mutation ([type]): [description]
+        targetScore ([type], optional): Defaults to None. [description]
+        maxGenerations (int, optional): Defaults to 100. [description]
+    
+    Returns:
+        [type]: [description]
+    """
 
     pop = initial
     result = _calcPopulation(pop, fitness)
