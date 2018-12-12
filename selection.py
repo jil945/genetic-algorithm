@@ -3,22 +3,28 @@ import random
 
 def selection_elite(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
-
     selection = int((.1 * len(population)))
-    return random.shuffle(scored_pop[:selection])
+    
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
 def selection_best_half(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
-
     selection = int((.5 * len(population)))
-    return random.shuffle(scored_pop[:selection])
+
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
 
 def selection_random_kth(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
     selection = int((random.random() * len(population))) + 2
 
-    return random.shuffle(scored_pop[:selection])
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
 
 def selection_random_choice(fitness, population, **kargs):
