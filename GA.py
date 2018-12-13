@@ -42,7 +42,7 @@ def _calc_population(population, fitness) -> {}:
         "fitness": pop_score
     }
 def genetic_algorithm(fitness, initial, selection, breeding, mutation, target_score=None, max_generations=100, *args, **kargs):
-    """Run the genetic algorithm based on the provied selection, breeding, mutation function
+    """Run the genetic algorithm based on the provided selection, breeding, mutation function
     
     Args:
         fitness (None): Fitness function, takes in member of population, returns flaot
