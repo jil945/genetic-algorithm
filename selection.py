@@ -1,27 +1,33 @@
 import random
 
 
-def elite_selection(fitness, population, **kargs):
+def selection_elite(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
-
     selection = int((.1 * len(population)))
-    return scored_pop[:selection]
+    
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
-def best_half_selection(fitness, population, **kargs):
+def selection_best_half(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
-
     selection = int((.5 * len(population)))
-    return scored_pop[:selection]
+
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
 
-def random_kth_selection(fitness, population, **kargs):
+def selection_random_kth(fitness, population, **kargs):
     scored_pop = sorted(population, key=fitness, reverse=True)
     selection = int((random.random() * len(population))) + 2
 
-    return scored_pop[:selection]
+    res = scored_pop[:selection]
+    random.shuffle(res)
+    return res
 
 
-def random_choice_selection(fitness, population, **kargs):
+def selection_random_choice(fitness, population, **kargs):
     random_candidates = []
     select_number = int((random.random() * len(population))) + 2
     for _ in range(select_number):
@@ -41,21 +47,21 @@ if __name__ == "__main__":
         print(i + 1, pop[i])
 
     print("\nTesting elite selection")
-    new_pop = elite_selection(fitness, pop)
+    new_pop = selection_elite(fitness, pop)
     for i in range(len(new_pop)):
         print(i + 1, new_pop[i])
 
     print("\nTesting half selection")
-    new_pop = best_half_selection(fitness, pop)
+    new_pop = selection_best_half(fitness, pop)
     for i in range(len(new_pop)):
         print(i + 1, new_pop[i])
 
     print("\nTesting random kth selection")
-    new_pop = random_kth_selection(fitness, pop)
+    new_pop = selection_random_kth(fitness, pop)
     for i in range(len(new_pop)):
         print(i + 1, new_pop[i])
 
     print("\nTesting random choice selection")
-    new_pop = random_choice_selection(fitness, pop)
+    new_pop = selection_random_choice(fitness, pop)
     for i in range(len(new_pop)):
         print(i + 1, new_pop[i])

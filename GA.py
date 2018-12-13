@@ -5,6 +5,8 @@ import time
 def _calc_population(population, fitness) -> {}:
     best_child = None
     best_score = None
+    worst_child = None
+    worst_score = None
     sum_score = 0.0
     n = len(population)
 
@@ -16,6 +18,9 @@ def _calc_population(population, fitness) -> {}:
         if best_score is None or score > best_score:
             best_score = score
             best_child = population[i]
+        if worst_score is None or score < worst_score:
+            worst_score = score
+            worst_child = population[i]
 
     avg = sum_score / n
     var = 0
@@ -28,6 +33,8 @@ def _calc_population(population, fitness) -> {}:
     return {
         "bestScore": best_score,
         "bestChild": best_child,
+        "worstScore": worst_score,
+        "worstChild": worst_child,
         "average": avg,
         "variance": var,
         "standardDeviation": std,
@@ -55,9 +62,16 @@ def genetic_algorithm(fitness, initial, selection, breeding, mutation, target_sc
     score = result["bestScore"]
     # child = result["bestChild"]
     res_list.append(result)
-
     i = 1
-    while (target_score is not None and score < target_score) and i < max_generations:
+    def check_stop():
+        one = False
+        if target_score is not None:
+            one = (score >= target_score)
+        two = (i >= max_generations)
+        return one or two
+
+    
+    while not check_stop():
 
         start = time.time()
         pop = selection(fitness, pop, *args, **kargs)
